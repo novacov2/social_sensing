@@ -38,9 +38,11 @@ if __name__ == '__main__':
     #stream.filter(track=['trump'])
 
 # print all tweets about trump
-    for tweet in tweepy.Cursor(api.search, q='trump').items(10):
+    for tweet in tweepy.Cursor(api.search, q='$AMD').items(10):
         print "----------------------------------"
         print(tweet.text)
+        print("@" + tweet.user.screen_name)
+        print(tweet.created_at)
         print "----------------------------------"
 
 
