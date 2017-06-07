@@ -7,3 +7,6 @@ A way to sense if a stock will be going up driven by hype on twitter.
 1)Allow users to choose the stocks to follow and the application will let them know when there is 'hype' over the stocks chosen
 
 2) Application tracks all stocks being tweeted about on twitter and will notify user if any type of stock has high expections. (end goal)
+
+Virtual stock market api we can use with python:
+https://github.com/brandonwu/moira
