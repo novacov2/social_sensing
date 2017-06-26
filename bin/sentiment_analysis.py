@@ -7,7 +7,9 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
+import stocktwits.api as stc
 from textblob import TextBlob
+
 
 class TwitterClient(object):
 
@@ -87,24 +89,33 @@ class TwitterClient(object):
             # print error (if any)
             print("Error : " + str(e))
  
-def main():
+if __name__ == "__main__":
     # creating object of TwitterClient Class
     api = TwitterClient()
-    # calling function to get tweets
-    tweets = api.get_tweets(query = '$GOOG', count = 200)
- 
-    # picking positive tweets from tweets
-    ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
-    # percentage of positive tweets
-    print("Positive tweets percentage: {} %".format(100*len(ptweets)/len(tweets)))
-    # picking negative tweets from tweets
-    ntweets = [tweet for tweet in tweets if tweet['sentiment'] == 'negative']
-    # percentage of negative tweets
-    print("Negative tweets percentage: {} %".format(100*len(ntweets)/len(tweets)))
-    # percentage of neutral tweets
-    print("Neutral tweets percentage: {} % \
+    trending = ['$' + str(ticker) for ticker in stc.get_trending_stocks()]
+
+    for ticker in trending:
+        # calling function to get tweets
+        tweets = api.get_tweets(query = ticker, count = 200)
+
+        # picking positive tweets from tweets
+        ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
+        
+        print('-----' + ticker.upper() + '-----')
+        # percentage of positive tweets
+        print("Positive tweets percentage: {} %".format(100*len(ptweets)/len(tweets)))
+
+        # picking negative tweets from tweets
+        ntweets = [tweet for tweet in tweets if tweet['sentiment'] == 'negative']
+
+        # percentage of negative tweets
+        print("Negative tweets percentage: {} %".format(100*len(ntweets)/len(tweets)))
+
+        # percentage of neutral tweets
+        print("Neutral tweets percentage: {} % \
         ".format(100*(len(tweets) - len(ntweets) - len(ptweets))/len(tweets)))
- 
+
+    """
     # printing first 9 positive tweets
     print("\n\nPositive tweets:")
     for tweet in ptweets[:10]:
@@ -114,9 +125,8 @@ def main():
     print("\n\nNegative tweets:")
     for tweet in ntweets[:10]:
         print(tweet['text'])
- 
-if __name__ == "__main__":
-    # calling main function
-    main()
+    """
+
+
         
         
