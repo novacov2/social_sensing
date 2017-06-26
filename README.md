@@ -8,5 +8,7 @@ A way to sense if a stock will be going up driven by hype on twitter.
 
 2) Application tracks all stocks being tweeted about on twitter and will notify user if any type of stock has high expections. (end goal)
 
+3) Run sentiment_analysis.py in bin to test. I've been using this file as the main file for now
+
 Virtual stock market api we can use with python:
-https://github.com/brandonwu/moira
+ibpy in lib
