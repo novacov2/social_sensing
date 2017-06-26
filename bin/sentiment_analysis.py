@@ -93,6 +93,7 @@ if __name__ == "__main__":
     # creating object of TwitterClient Class
     api = TwitterClient()
     trending = ['$' + str(ticker) for ticker in stc.get_trending_stocks()]
+    top_stock = ('',0)
 
     for ticker in trending:
         # calling function to get tweets
@@ -103,7 +104,11 @@ if __name__ == "__main__":
         
         print('-----' + ticker.upper() + '-----')
         # percentage of positive tweets
-        print("Positive tweets percentage: {} %".format(100*len(ptweets)/len(tweets)))
+        positive_tweets = 100*len(ptweets)/len(tweets)
+        print("Positive tweets percentage: {} %".format(positive_tweets))
+
+        if positive_tweets > top_stock[1]:
+            top_stock = (ticker, positive_tweets)
 
         # picking negative tweets from tweets
         ntweets = [tweet for tweet in tweets if tweet['sentiment'] == 'negative']
@@ -115,6 +120,8 @@ if __name__ == "__main__":
         print("Neutral tweets percentage: {} % \
         ".format(100*(len(tweets) - len(ntweets) - len(ptweets))/len(tweets)))
 
+    
+    print('\nTop stock %s has the highest tweet percentage %d%%' % (top_stock[0],top_stock[1]))
     """
     # printing first 9 positive tweets
     print("\n\nPositive tweets:")

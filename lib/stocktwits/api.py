@@ -74,7 +74,7 @@ def get_trending_stocks():
     """
     trending = R.get_json(ST_BASE_URL + 'trending/symbols.json', params=ST_BASE_PARAMS)['symbols']
 
-    symbols = [s['symbol'] for s in trending]
+    symbols = [s['symbol'] for s in trending[:10]]
     return symbols
 
 
