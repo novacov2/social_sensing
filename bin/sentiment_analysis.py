@@ -10,6 +10,9 @@ import re
 import stocktwits.api as stc
 from textblob import TextBlob
 
+#disable unsecure warning
+import requests.packages.urllib3
+requests.packages.urllib3.disable_warnings()
 
 class TwitterClient(object):
 
@@ -53,7 +56,7 @@ class TwitterClient(object):
         else:
             return 'negative'
  
-    def get_tweets(self, query, count = 10):
+    def get_tweets(self, query, count = 30):
         '''
         Main function to fetch tweets and parse them.
         '''
@@ -121,7 +124,7 @@ if __name__ == "__main__":
         ".format(100*(len(tweets) - len(ntweets) - len(ptweets))/len(tweets)))
 
     
-    print('\nTop stock %s has the highest tweet percentage %d%%' % (top_stock[0],top_stock[1]))
+    print('\nTop stock %s has the highest positive tweet percentage %d%%' % (top_stock[0],top_stock[1]))
     """
     # printing first 9 positive tweets
     print("\n\nPositive tweets:")
