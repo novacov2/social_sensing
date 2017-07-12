@@ -23,6 +23,7 @@ stock_tweets = {}
 trending = []
 api = None
 flag = 1
+DEBUG = 1
 
 def signal_handler(signal, frame):
     global flag
@@ -84,8 +85,13 @@ class TwitterClient(object):
             # parsing tweets one by one
             for tweet in fetched_tweets:
                 tweet_sent = self.get_tweet_sentiment(tweet.text)
-
+                
                 tweet = json.loads(json.dumps(tweet._json))
+
+                if 'FAST' in tweet['text']:
+                    print('------------------')
+                    print(tweet['text'])
+                    print(tweet_sent)
                 #TODO: In future check if tweet is already in queue
                 # because retweets are possible
                 if stock_tweets[query].full():
@@ -103,12 +109,12 @@ class StdOutListner(StreamListener):
         # Check what ticker symbol the data is about and push to queue
         tweet = json.loads(data)
         ticker = ''
-
+        
         for stock in trending:
             if stock in tweet['text']:
                 if stock_tweets[stock].full():
                     stock_tweets[stock].get()
-                stock_tweets[stock].put((tweet['created_at'], api.get_tweet_sentiment(tweet['text'])))
+                stock_tweets[stock].put((tweet['created_at'], api.get_tweet_sentiment(tweet['text']) == 'positive' ))
         return True
 
         def on_error(self, status):
@@ -121,6 +127,7 @@ def data_processing():
         for stock in trending:
             queue_arr = list(stock_tweets[stock].queue)
             count = 0
+
             for data in queue_arr:
                 sentiment = data[1]
                 if sentiment:
@@ -132,6 +139,7 @@ def data_processing():
 
         print('Top Stock:%s %d%%' % (top_stock[0], top_stock[1]))
         time.sleep(5)
+
 if __name__ == "__main__":
     # creating object of TwitterClient Class
     signal.signal(signal.SIGINT, signal_handler)
