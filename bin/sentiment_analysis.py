@@ -12,7 +12,8 @@ from textblob import TextBlob
 import ib_api as ibapi
 from ib.opt import Connection
 from datetime import datetime, time
-import time
+# must name something other than time because conflicts with datetime
+import time as t
 import Queue
 import signal
 import sys
@@ -117,8 +118,9 @@ class StdOutListener(StreamListener):
     def on_data(self, data):
         global stock_tweets
         global trending
+        global flag
 
-        try:
+        if(datetime.now().time() >= time(7,30) and datetime.now().time() <= time(13,0)):
             # Check what ticker symbol the data is about and push to queue
             tweet = json.loads(data)
 
@@ -132,11 +134,10 @@ class StdOutListener(StreamListener):
                         print(tweet['text'])
                         print(api.get_tweet_sentiment(tweet['text']))
                     stock_tweets['$' + stock].put((tweet['created_at'], api.get_tweet_sentiment(tweet['text']) == 'positive' ))
-        except KeyError as k:
-            print(k)
-        
-
-        return True
+            return True
+        else:
+            flag = 0
+            return False
 
         def on_error(self, status):
             with open('listener.log', 'w') as f:
@@ -189,7 +190,7 @@ def data_processing():
         print('Top Stock:%s %d%%' % (top_stock[0], top_stock[1]))
         print('Account Balalnce: %f' % sim.acc_bal())
         print('Percentage Gain: %f%%' % (100*(sim.acc_bal() - 100000)/100000) )
-        time.sleep(5)
+        t.sleep(5)
 
 if __name__ == "__main__":
     # Make sure program exits on signal interrupt
@@ -204,7 +205,7 @@ if __name__ == "__main__":
     # Create object for stock market simulation
     sim = StockSim()
 
-    #while(datetime.now().time() >= time(7,30) and datetime.now().time() <= time(13,0)):
+
     thread = Thread(target=data_processing)
     stream = Stream(api.auth, l)
 
@@ -220,4 +221,5 @@ if __name__ == "__main__":
 
     thread.start()
     stream.filter(track=['$' + stock for stock in trending])
-
+    thread.join()
+    print_closed_banner()
