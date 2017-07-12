@@ -30,6 +30,7 @@ trending = []
 api = None
 flag = 1
 sim = None
+DEBUG = 1
 
 def signal_handler(signal, frame):
     global flag
@@ -126,6 +127,10 @@ class StdOutListener(StreamListener):
                     if stock_tweets['$' + stock].full():
                         stock_tweets['$' + stock].get()
                     #TODO: Check if tweet is already in queue
+                    if DEBUG == 1:
+                        print('-----------------------')
+                        print(tweet['text'])
+                        print(api.get_tweet_sentiment(tweet['text']))
                     stock_tweets['$' + stock].put((tweet['created_at'], api.get_tweet_sentiment(tweet['text']) == 'positive' ))
         except KeyError as k:
             print(k)
