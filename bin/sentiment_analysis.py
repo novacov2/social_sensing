@@ -1,24 +1,23 @@
 #Import the necessary methods from tweepy library
 import tweepy
-from tweepy.streaming import StreamListener
-from tweepy import OAuthHandler
-from tweepy import Stream
+import os
 import json
-import pandas as pd
 import matplotlib.pyplot as plt
 import re
 import stocktwits.api as stc
-from textblob import TextBlob
-import ib_api as ibapi
-from ib.opt import Connection
-from datetime import datetime, time
 # must name something other than time because conflicts with datetime
 import time as t
 import Queue
 import signal
 import sys
+from tweepy.streaming import StreamListener
+from tweepy import OAuthHandler
+from tweepy import Stream
+from textblob import TextBlob
+from datetime import datetime, time
 from threading import Thread
 from stocksim import StockSim
+
 
 #disable unsecure warning
 import requests.packages.urllib3
@@ -32,6 +31,8 @@ api = None
 flag = 1
 sim = None
 DEBUG = 1
+
+log_path = os.path.dirname(os.path.abspath(__file__)) + '../logs/log.txt'
 
 def signal_handler(signal, frame):
     global flag
@@ -97,7 +98,7 @@ class TwitterClient(object):
                 # because retweets are possible
                 if stock_tweets[query].full():
                     stock_tweets[query].get()
-                stock_tweets[query].put((tweet['created_at'], tweet_sent == 'positive'))
+                stock_tweets[query].put((tweet['created_at'], tweet_sent == 'positive', tweet['text']))
         except tweepy.TweepError as e:
             print("Error : " + str(e))
  
@@ -114,6 +115,13 @@ def print_closed_banner():
     print('|-----------------------------------------------------|')
     
 
+def isDup(q, text):
+    queue_arr = list(q.queue)
+    for data in queue_arr:
+        if data == text:
+            return True
+    return False
+
 class StdOutListener(StreamListener):
     def on_data(self, data):
         global stock_tweets
@@ -126,14 +134,19 @@ class StdOutListener(StreamListener):
 
             for stock in trending:
                 if stock in tweet['text']:
+                    #TODO: starting push text into queue to see if there are retweets/ spammers of a stock                                        
+                    if isDup(stock_tweets['$' + stock], tweet['text']):
+                        continue
+
                     if stock_tweets['$' + stock].full():
                         stock_tweets['$' + stock].get()
-                    #TODO: Check if tweet is already in queue
+
                     if DEBUG == 1:
                         print('-----------------------')
                         print(tweet['text'])
                         print(api.get_tweet_sentiment(tweet['text']))
-                    stock_tweets['$' + stock].put((tweet['created_at'], api.get_tweet_sentiment(tweet['text']) == 'positive' ))
+
+                    stock_tweets['$' + stock].put((tweet['created_at'], api.get_tweet_sentiment(tweet['text']) == 'positive' , tweet['text']))
             return True
         else:
             flag = 0
@@ -153,6 +166,20 @@ def QueueSentiment(q):
             count += 1
     return 100*count/len(queue_arr)
 
+def get_stock_twits_data():
+    global trending
+    while(flag):
+        messages = stc.get_stock_streams(trending)['messages']
+        for stock in trending:
+            for message in messages:
+                """ TODO: CHECK IF DUP EXISTS """
+                if stock_tweets['$' + stock].full():
+                    stock_tweets['$' + stock].get()
+
+                stock_tweets['$' + stock].put((message['created_at'], api.get_tweet_sentiment(message['body']) == 'positive', message['body']))
+        # Rate limit is 400 requests per hour = 1/9 requests per second
+        t.sleep(10)
+
 def data_processing(): 
     global flag
     global current_stock
@@ -169,7 +196,7 @@ def data_processing():
         if current_stock[0] != '':        
             if top_stock[0] != current_stock[0] and top_stock[1] >= QueueSentiment(stock_tweets['$' + current_stock[0]]):
                 print('Selling 100 shares of %s' % current_stock[0])
-                sim.sell_stock(top_stock[0])
+                sim.sell_stock(current_stock[0])
 
                 price = sim.stock_price(top_stock[0])
                 bpwr = sim.buying_pwr()
@@ -188,11 +215,18 @@ def data_processing():
 
 
         print('Top Stock:%s %d%%' % (top_stock[0], top_stock[1]))
-        print('Account Balalnce: %f' % sim.acc_bal())
-        print('Percentage Gain: %f%%' % (100*(sim.acc_bal() - 100000)/100000) )
+        acc_bal = sim.acc_bal()
+        print('Account Balalnce: %f' % acc_bal)
+        print('Percentage Gain: %f%%' % (100*(acc_bal - 100000)/100000) )
         t.sleep(5)
 
 if __name__ == "__main__":
+    if not os.path.exists(os.path.dirname(log_path)):
+        os.makedirs(os.path.dirname(log_path))
+
+    with open(log_path, 'w') as f: 
+        f.write('')
+
     # Make sure program exits on signal interrupt
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -207,19 +241,26 @@ if __name__ == "__main__":
 
 
     thread = Thread(target=data_processing)
-    stream = Stream(api.auth, l)
-
+    thread1 = Thread(target=get_stock_twits_data)
+    
     trending = [str(ticker) for ticker in stc.get_trending_stocks()]
 
 
     for ticker in trending:
         if ticker not in stock_tweets:
-            stock_tweets['$' + ticker] = Queue.PriorityQueue(maxsize=30)
+            stock_tweets['$' + ticker] = Queue.PriorityQueue(maxsize=50)
 
         # calling function to get tweets
         api.get_tweets(query = '$' + ticker, count = 30)
 
+    thread1.start()
     thread.start()
-    stream.filter(track=['$' + stock for stock in trending])
+    while flag:
+        try:
+            stream = Stream(api.auth, l)
+            stream.filter(track=['$' + stock for stock in trending])
+        except IncompleteRead:
+            continue
+
     thread.join()
     print_closed_banner()

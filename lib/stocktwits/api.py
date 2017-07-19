@@ -24,15 +24,20 @@ def get_watched_stocks(wl_id):
     wl = wl['watchlist']['symbols']
     return [s['symbol'] for s in wl]
 
-
+"""
 def get_stock_stream(symbol, params={}):
-    """ gets stream of messages for given symbol
-    """
     all_params = ST_BASE_PARAMS.copy()
     for k, v in params.iteritems():
         all_params[k] = v
     return R.get_json(ST_BASE_URL + 'streams/symbol/{}.json'.format(symbol), params=all_params)
+"""
 
+def get_stock_streams(symbols):
+    all_params = ST_BASE_PARAMS.copy()
+    all_params['symbols'] = ''
+    for symbol in symbols:
+        all_params['symbols'] += symbol + ','
+    return R.get_json(ST_BASE_URL + 'streams/symbols.json', params = all_params)
 
 def get_message_stream(wl_id, params={}):
     """ Gets up to 30 messages from Watchlist (wl_id) according to additional params
