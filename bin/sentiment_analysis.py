@@ -9,6 +9,7 @@ import stocktwits.api as stc
 import time as t
 import Queue
 import signal
+import requests
 import sys
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
@@ -31,8 +32,19 @@ api = None
 flag = 1
 sim = None
 DEBUG = 1
+log = None 
+data = None
 
-log_path = os.path.dirname(os.path.abspath(__file__)) + '../logs/log.txt'
+log_path  = os.path.dirname(os.path.abspath(__file__)) + '/../logs/log.txt'
+data_path = os.path.dirname(os.path.abspath(__file__)) + '/../data/data%s.txt' % datetime.today().strftime('%m-%d-%Y')
+
+def print_to_log(text):
+    global log
+    log.write(text + '\n')
+
+def print_to_data(text):
+    global data
+    data.write(text + '\n')
 
 def signal_handler(signal, frame):
     global flag
@@ -57,7 +69,9 @@ class TwitterClient(object):
             # create tweepy API object to fetch tweets
             self.api = tweepy.API(self.auth)
         except:
-            print("Error: Authentication Failed!")
+            if DEBUG:
+                print("Error: Authentication Failed!")
+            print_to_log("Error: Authentication Failed!")
     
     def clean_tweet(self, tweet):
         '''
@@ -100,19 +114,29 @@ class TwitterClient(object):
                     stock_tweets[query].get()
                 stock_tweets[query].put((tweet['created_at'], tweet_sent == 'positive', tweet['text']))
         except tweepy.TweepError as e:
-            print("Error : " + str(e))
+            if DEBUG:
+                print("Error : " + str(e))
+            print_to_log("Error : " + str(e))
  
         except tweepy.TweepError as e:
             # print error (if any)
-            print("Error : " + str(e))
+            if DEBUG:
+                print("Error : " + str(e))
+            print_to_log("Error : " + str(e))
 
 
 def print_closed_banner():
-    print('|-----------------------------------------------------|')
-    print('|                                                     |')
-    print('|               Market is now closed                  |')
-    print('|                                                     |')
-    print('|-----------------------------------------------------|')
+    if DEBUG:
+        print('|-----------------------------------------------------|')
+        print('|                                                     |')
+        print('|               Market is now closed                  |')
+        print('|                                                     |')
+        print('|-----------------------------------------------------|')
+    print_to_log('|-----------------------------------------------------|')
+    print_to_log('|                                                     |')
+    print_to_log('|               Market is now closed                  |')
+    print_to_log('|                                                     |')
+    print_to_log('|-----------------------------------------------------|')
     
 
 def isDup(q, text):
@@ -145,6 +169,9 @@ class StdOutListener(StreamListener):
                         print('-----------------------')
                         print(tweet['text'])
                         print(api.get_tweet_sentiment(tweet['text']))
+                        print_to_log('-----------------------')
+                        print_to_log(tweet['text'])
+                        print_to_log(api.get_tweet_sentiment(tweet['text']))
 
                     stock_tweets['$' + stock].put((tweet['created_at'], api.get_tweet_sentiment(tweet['text']) == 'positive' , tweet['text']))
             return True
@@ -184,6 +211,7 @@ def data_processing():
     global flag
     global current_stock
 
+    count = 0
     while(flag):
         top_stock = ('',0)
         for stock in trending:
@@ -195,13 +223,20 @@ def data_processing():
         #Check if current stock should be sold
         if current_stock[0] != '':        
             if top_stock[0] != current_stock[0] and top_stock[1] >= QueueSentiment(stock_tweets['$' + current_stock[0]]):
-                print('Selling 100 shares of %s' % current_stock[0])
+                if DEBUG:
+                    print('Selling %d shares of %s' % (sim.get_shares(current_stock[0]), current_stock[0]))
+                print_to_log('Selling %d shares of %s' % (sim.get_shares(current_stock[0]), current_stock[0]))
+                
                 sim.sell_stock(current_stock[0])
 
                 price = sim.stock_price(top_stock[0])
                 bpwr = sim.buying_pwr()
                 shares = int(bpwr*.8/price)
-                print('Buying %d shares of %s' % (shares,top_stock[0]))
+
+                if DEBUG:
+                    print('Buying %d shares of %s' % (shares,top_stock[0]))
+                print_to_log('Buying %d shares of %s' % (shares,top_stock[0]))
+
                 sim.buy_stock(top_stock[0], shares)
                 current_stock = (top_stock[0], top_stock[1])
 
@@ -209,23 +244,43 @@ def data_processing():
             price = sim.stock_price(top_stock[0])
             bpwr = sim.buying_pwr()
             shares = int(bpwr*.8/price)
-            print('Buying %d shares of %s' % (shares,top_stock[0]))
+
+            if DEBUG:
+                print('Buying %d shares of %s' % (shares,top_stock[0]))
+            print_to_log('Buying %d shares of %s' % (shares,top_stock[0]))
+
             sim.buy_stock(top_stock[0], shares)
             current_stock = (top_stock[0], top_stock[1])
 
-
-        print('Top Stock:%s %d%%' % (top_stock[0], top_stock[1]))
         acc_bal = sim.acc_bal()
-        print('Account Balalnce: %f' % acc_bal)
-        print('Percentage Gain: %f%%' % (100*(acc_bal - 100000)/100000) )
+        if DEBUG:
+            print('Top Stock:%s %d%%' % (top_stock[0], top_stock[1]))
+            print('Account Balalnce: %f' % acc_bal)
+            print('Percentage Gain: %f%%' % (100*(acc_bal - 100000)/100000) )
+        print_to_log('Top Stock:%s %d%%' % (top_stock[0], top_stock[1]))
+        print_to_log('Account Balalnce: %f' % acc_bal)
+        print_to_log('Percentage Gain: %f%%' % (100*(acc_bal - 100000)/100000) )
+
+        if (count % 60 == 0):
+            now = datetime.now()
+            print_to_data('%s:%s %f' % (now.hour, now.minute, acc_bal))
+            count = 0
+
         t.sleep(5)
+        count +=5
 
 if __name__ == "__main__":
     if not os.path.exists(os.path.dirname(log_path)):
         os.makedirs(os.path.dirname(log_path))
+        
+    #create log of statements
+    log = open(log_path, 'w', 1)
 
-    with open(log_path, 'w') as f: 
-        f.write('')
+    # create data file to keep track of data points on graph
+    data = open(data_path,'w', 1)
+
+    # redirect all stderr too path
+    sys.stderr = log
 
     # Make sure program exits on signal interrupt
     signal.signal(signal.SIGINT, signal_handler)
@@ -259,7 +314,15 @@ if __name__ == "__main__":
         try:
             stream = Stream(api.auth, l)
             stream.filter(track=['$' + stock for stock in trending])
-        except IncompleteRead:
+        except KeyboardInterrupt:
+            if DEBUG:
+                print('Exiting program \n')
+            print_to_log('Exiting program \n')
+            raise
+        except:
+            if DEBUG:
+                print("INCOMPLETE READ")
+            print_to_log("INCOMPLETE READ")
             continue
 
     thread.join()

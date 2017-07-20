@@ -1,6 +1,7 @@
 from googlefinance import getQuotes
 import json
 import time
+import urllib2
 
 class StockSim(object):
     def __init__(self, acc_bal = 100000):
@@ -10,10 +11,24 @@ class StockSim(object):
     def buying_pwr(self):
         return self.bpwr
         
+    def get_shares(self, stock):
+        return self.portfolio[stock]
+        
     def acc_bal(self):
         count = self.bpwr
         for stock, shares in self.portfolio.items():
-            stock_info = getQuotes(stock)[0]
+            num_tries = 0
+            while True:
+                try:
+                    stock_info = getQuotes(stock)[0]
+                except urllib2.HTTPError:
+                    if num_tries == 3:
+                        raise
+                    num_tries += 1
+                    time.sleep(1)
+                    continue
+                break
+                
             price = float(stock_info['LastTradePrice'])
             count += price * shares
         return count
