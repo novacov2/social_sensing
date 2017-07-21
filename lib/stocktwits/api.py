@@ -99,11 +99,3 @@ def clean_watchlist(wl_id):
     return qty_deleted
 
 
-def testing():
-    all_params = ST_BASE_PARAMS.copy()
-    all_params['q'] = 'GOOG'
-    trending = R.get_json(ST_BASE_URL + 'search/symbols.json', params=all_params)
-    print trending['results'][0]
-
-    
-

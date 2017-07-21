@@ -226,6 +226,10 @@ def data_processing():
 
     count = 0
     while(flag):
+        if(not (datetime.now().time() >= time(7,30) and datetime.now().time() <= time(13,0))):
+            flag = 0 
+            break;
+
         top_stock = ('',0)
         for stock in trending:
             positive_sentiment = QueueSentiment(stock_tweets['$' + stock])
@@ -344,6 +348,6 @@ if __name__ == "__main__":
     # write acc balance to file
     dp = os.path.dirname(os.path.abspath(__file__)) + '/../data/current_info'
     with open(dp, 'w') as f:
-        f.write(sim.acc_bal())
+        f.write(str(sim.acc_bal()))
 
     print_closed_banner()
