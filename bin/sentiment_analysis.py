@@ -49,7 +49,20 @@ def print_to_data(text):
 def signal_handler(signal, frame):
     global flag
     flag = 0
-    sys.exit(0)
+    
+
+
+def create_sim():
+    global sim
+
+    dp = os.path.dirname(os.path.abspath(__file__)) + '/../data/current_info'
+    if os.path.exists(dp):
+        with open(dp, 'r') as f:
+            last = f.readline()
+            sim = StockSim(float(last))
+    else:
+        sim = StockSim()
+            
 
 class TwitterClient(object):
 
@@ -292,7 +305,8 @@ if __name__ == "__main__":
     api = TwitterClient()
 
     # Create object for stock market simulation
-    sim = StockSim()
+    #sim = StockSim()
+    create_sim()
 
 
     thread = Thread(target=data_processing)
@@ -326,4 +340,10 @@ if __name__ == "__main__":
             continue
 
     thread.join()
+
+    # write acc balance to file
+    dp = os.path.dirname(os.path.abspath(__file__)) + '/../data/current_info'
+    with open(dp, 'w') as f:
+        f.write(sim.acc_bal())
+
     print_closed_banner()
