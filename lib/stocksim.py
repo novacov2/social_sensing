@@ -57,11 +57,11 @@ class StockSim(object):
 
         if ticker not in self.portfolio:
             'TODO: raise error do not have this stock'
-
+            print('ERROR: do not have this stock')
         if (shares <= self.portfolio[ticker]):
             self.bpwr += price * shares
             self.portfolio[ticker] -= shares
         else:
             'TODO: raise error do not have amount of shares'
-
+            print('ERROR: do not have %d shares' % shares)
 

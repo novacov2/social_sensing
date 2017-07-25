@@ -2,7 +2,6 @@
 import tweepy
 import os
 import json
-import matplotlib.pyplot as plt
 import re
 import stocktwits.api as stc
 # must name something other than time because conflicts with datetime
@@ -165,7 +164,7 @@ class StdOutListener(StreamListener):
         global trending
         global flag
 
-        if(datetime.now().time() >= time(7,30) and datetime.now().time() <= time(13,0)):
+        if(datetime.now().time() >= time(9,30) and datetime.now().time() <= time(16,0)):
             # Check what ticker symbol the data is about and push to queue
             tweet = json.loads(data)
 
@@ -226,7 +225,7 @@ def data_processing():
 
     count = 0
     while(flag):
-        if(not (datetime.now().time() >= time(7,30) and datetime.now().time() <= time(13,0))):
+        if(not (datetime.now().time() >= time(9,30) and datetime.now().time() <= time(16,0))):
             flag = 0 
             break;
 
@@ -244,7 +243,7 @@ def data_processing():
                     print('Selling %d shares of %s' % (sim.get_shares(current_stock[0]), current_stock[0]))
                 print_to_log('Selling %d shares of %s' % (sim.get_shares(current_stock[0]), current_stock[0]))
                 
-                sim.sell_stock(current_stock[0])
+                sim.sell_stock(current_stock[0], sim.get_shares(current_stock[0]))
 
                 price = sim.stock_price(top_stock[0])
                 bpwr = sim.buying_pwr()
