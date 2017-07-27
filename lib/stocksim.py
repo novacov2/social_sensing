@@ -28,18 +28,18 @@ class StockSim(object):
                     time.sleep(1)
                     continue
                 break
-                
-            price = float(stock_info['LastTradePrice'])
+            price = stock_info['LastTradePrice'].replace(',','')
+            price = float(price)
             count += price * shares
         return count
 
     def stock_price(self, ticker):
-        return float(getQuotes(ticker)[0]['LastTradePrice'])
+        return float(getQuotes(ticker)[0]['LastTradePrice'].replace(',',''))
 
     # Ticker must have no '$' sign
     def buy_stock(self, ticker, shares = 100):
         stock = getQuotes(ticker)[0]
-        price = float(stock['LastTradePrice'])
+        price = float(stock['LastTradePrice'].replace(',',''))
         
         if (price * shares <= self.bpwr):
             self.bpwr -= price * shares
@@ -53,7 +53,7 @@ class StockSim(object):
 
     def sell_stock(self, ticker, shares=100):
         stock = getQuotes(ticker)[0]
-        price = float(stock['LastTradePrice'])
+        price = float(stock['LastTradePrice'].replace(',',''))
 
         if ticker not in self.portfolio:
             'TODO: raise error do not have this stock'
