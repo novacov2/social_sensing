@@ -9,7 +9,7 @@ click==6.7
 cloud-init==0.7.5
 colorama==0.2.5
 configobj==4.7.2
-cryptography==1.9
+cryptography==3.2
 cycler==0.10.0
 dpkt==1.8.8
 enum==0.4.6
