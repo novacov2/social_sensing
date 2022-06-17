@@ -33,7 +33,7 @@ mechanize==0.3.3
 metapy==0.2.1
 ndg-httpsclient==0.4.2
 nltk==3.2.4
-numpy==1.12.0
+numpy==1.21.0
 oauth==1.0.1
 oauthlib==2.0.2
 PAM==0.4.2
